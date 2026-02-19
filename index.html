@@ -499,8 +499,8 @@
     });
 
     document.getElementById("ctaStart").addEventListener("click", () => {
-      alert("Listo. Ahora dime qué secciones quieres y lo adaptamos a tu proyecto 🙂");
-    });
+  window.location.href = "dashboard.html";
+});
 
     document.getElementById("ctaSecondary").addEventListener("click", () => {
       document.getElementById("sections").scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
