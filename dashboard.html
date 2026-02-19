@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bubbles Dashboard</title>
+  <meta name="description" content="Dashboard de bubbles/puntos por productividad con importación Excel/CSV." />
+
+  <!-- SheetJS (leer/escribir XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1230;
+      --card: rgba(255,255,255,.06);
+      --text:#EAF0FF;
+      --muted: rgba(234,240,255,.72);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r: 18px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 15%, rgba(130,170,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 35%, rgba(120,255,225,.10), transparent 60%),
+        radial-gradient(1200px 900px at 55% 95%, rgba(255,140,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    .bubbles{
+      position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden;
+    }
+    .bubble{
+      position:absolute; bottom:-120px;
+      width: var(--size); height: var(--size); left: var(--x);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,.06) 55%, rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      opacity: var(--o);
+      animation: floatUp var(--dur) linear infinite;
+      box-shadow: 0 0 30px rgba(130,170,255,.10);
+    }
+    @keyframes floatUp{
+      0%   { transform: translateY(0) translateX(0) scale(1); }
+      100% { transform: translateY(calc(-100vh - 240px)) translateX(var(--drift)) scale(1.05); }
+    }
+
+    .wrap{
+      width:min(1200px, calc(100% - clamp(24px, 5vw, 56px)));
+      margin:0 auto;
+      padding: clamp(18px, 3.2vw, 34px) 0 clamp(40px, 6vw, 72px);
+      position:relative;
+      z-index:2;
+    }
+
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding: 14px 0 18px;
+      flex-wrap:wrap;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      text-decoration:none; color:var(--text);
+    }
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), rgba(255,255,255,.06) 58%, rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    .name{ font-weight:800; letter-spacing:.2px; }
+    .tag{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:700;
+      font-size: 13px;
+      letter-spacing:.2px;
+      display:inline-flex; align-items:center; gap:8px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-decoration:none;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .btn.primary{ background: linear-gradient(135deg, rgba(120,255,225,.22), rgba(130,170,255,.20)); }
+    .btn.danger{ background: rgba(255,80,110,.14); border-color: rgba(255,80,110,.28); }
+
+    .card{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: clamp(16px, 2vw, 22px);
+      padding: 16px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.32);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    h1{ margin:0; font-size: clamp(20px, 2.2vw, 28px); }
+    .muted{ color:var(--muted); font-size:13px; line-height:1.45; margin-top:6px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .left, .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .input{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      outline:none;
+      min-width: 220px;
+    }
+    .input::placeholder{ color: rgba(234,240,255,.45); }
+
+    .tablewrap{
+      overflow:auto;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width: 720px;
+      background: rgba(0,0,0,.12);
+    }
+    thead th{
+      position:sticky; top:0;
+      background: rgba(10,14,30,.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-align:left;
+      font-size:12px;
+      letter-spacing:.18px;
+      color: rgba(234,240,255,.78);
+      border-bottom:1px solid rgba(255,255,255,.10);
+      padding: 12px 12px;
+      white-space:nowrap;
+    }
+    tbody td{
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding: 12px 12px;
+      vertical-align:middle;
+      font-size: 13px;
+    }
+    tbody tr:hover td{ background: rgba(255,255,255,.03); }
+    .emp{ font-weight:800; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-weight:800;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(120,255,225,.85);
+      box-shadow: 0 0 18px rgba(120,255,225,.55);
+    }
+    .actionsRow{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .miniBtn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size: 12px;
+    }
+    .miniBtn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .miniBtn.neg{ background: rgba(255,80,110,.12); border-color: rgba(255,80,110,.26); }
+
+    .hint{
+      margin-top:10px;
+      color: rgba(234,240,255,.60);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,240,255,.82);
+      white-space:nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bubbles" aria-hidden="true" id="bubbles"></div>
+
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="./index.html">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="name">Bubbles Dashboard</div>
+          <span class="tag">Importa Excel • suma +5/+10/+15 • exporta</span>
+        </div>
+      </a>
+
+      <div class="right">
+        <a class="btn" href="./index.html">⬅️ Volver</a>
+        <button class="btn" id="toggleMotion" type="button">🫧 Toggle bubbles</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <h1>Recompensas por productividad (bubbles)</h1>
+      <div class="muted">
+        Importa un Excel/CSV con columnas <span class="kbd">Name</span> y <span class="kbd">Balance</span> (o similares).
+        Luego suma en incrementos de <span class="kbd">+5</span>, <span class="kbd">+10</span>, <span class="kbd">+15</span>.
+      </div>
+
+      <div class="grid">
+        <div class="controls">
+          <div class="left">
+            <input class="input" id="file" type="file" accept=".xlsx,.xls,.csv" />
+            <button class="btn primary" id="importBtn" type="button">📥 Importar</button>
+            <button class="btn" id="exportBtn" type="button">📤 Exportar XLSX</button>
+          </div>
+          <div class="right">
+            <input class="input" id="search" type="search" placeholder="Buscar empleado…" />
+            <button class="btn danger" id="resetBtn" type="button">🗑️ Reset</button>
+          </div>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40%;">Empleado</th>
+                <th style="width:18%;">Balance</th>
+                <th style="width:42%;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hint">
+          💾 Se guarda automáticamente en este navegador (local).  
+          Tip: en el Excel usa cabeceras <span class="kbd">Name</span> / <span class="kbd">Balance</span>. Si no, el sistema intentará adivinar (1ª y 2ª columna).
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---------------- Bubbles background ----------------
+    const bubblesEl = document.getElementById("bubbles");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let motionOn = !prefersReducedMotion;
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+
+    function buildBubbles(count){
+      bubblesEl.innerHTML = "";
+      for(let i=0; i<count; i++){
+        const b = document.createElement("div");
+        b.className = "bubble";
+        const size = rand(14, 88);
+        const x = rand(0, 100);
+        const dur = rand(10, 26);
+        const o = rand(0.18, 0.55);
+        const drift = `${rand(-60, 60)}px`;
+        b.style.setProperty("--size", `${size}px`);
+        b.style.setProperty("--x", `${x}vw`);
+        b.style.setProperty("--dur", `${dur}s`);
+        b.style.setProperty("--o", o.toFixed(2));
+        b.style.setProperty("--drift", drift);
+        b.style.animationDelay = `${-rand(0, dur)}s`;
+        bubblesEl.appendChild(b);
+      }
+    }
+    function setMotion(on){
+      motionOn = on;
+      bubblesEl.style.display = motionOn ? "block" : "none";
+      if(motionOn && bubblesEl.childElementCount === 0) buildBubbles(26);
+    }
+    if(motionOn) buildBubbles(26); else bubblesEl.style.display="none";
+    document.getElementById("toggleMotion").addEventListener("click", () => setMotion(!motionOn));
+
+    // ---------------- Data model ----------------
+    const LS_KEY = "bubbles_employees_v1";
+
+    /** @type {{name:string, balance:number}[]} */
+    let employees = loadFromLocal() ?? [];
+
+    function loadFromLocal(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){ return null; }
+    }
+    function saveToLocal(){
+      localStorage.setItem(LS_KEY, JSON.stringify(employees));
+    }
+
+    function normalizeName(v){
+      return String(v ?? "").trim();
+    }
+    function toNumber(v){
+      const n = Number(String(v ?? "").replace(",", "."));
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // Try to map headers flexibly
+    function findKey(obj, candidates){
+      const keys = Object.keys(obj || {});
+      const lower = keys.map(k => k.toLowerCase());
+      for(const c of candidates){
+        const idx = lower.indexOf(c);
+        if(idx >= 0) return keys[idx];
+      }
+      return null;
+    }
+
+    function render(){
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      const filtered = employees
+        .slice()
+        .sort((a,b) => b.balance - a.balance || a.name.localeCompare(b.name))
+        .filter(e => !q || e.name.toLowerCase().includes(q));
+
+      if(filtered.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="3" style="padding:18px;color:rgba(234,240,255,.65)">
+          No hay empleados cargados. Importa un Excel/CSV para empezar.
+        </td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      for(const emp of filtered){
+        const tr = document.createElement("tr");
+
+        const nameTd = document.createElement("td");
+        nameTd.innerHTML = `<span class="emp">${escapeHtml(emp.name)}</span>`;
+        tr.appendChild(nameTd);
+
+        const balTd = document.createElement("td");
+        balTd.innerHTML = `<span class="pill"><span class="dot"></span>${emp.balance}</span>`;
+        tr.appendChild(balTd);
+
+        const actTd = document.createElement("td");
+        actTd.className = "actionsRow";
+        actTd.appendChild(makeAddBtn(emp.name, 5));
+        actTd.appendChild(makeAddBtn(emp.name, 10));
+        actTd.appendChild(makeAddBtn(emp.name, 15));
+        // opcional: restar
+        actTd.appendChild(makeAddBtn(emp.name, -5, true));
+        tr.appendChild(actTd);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function makeAddBtn(name, delta, isNeg=false){
+      const btn = document.createElement("button");
+      btn.className = "miniBtn" + (isNeg ? " neg" : "");
+      btn.type = "button";
+      btn.textContent = (delta > 0 ? `+${delta}` : `${delta}`);
+      btn.addEventListener("click", () => {
+        const idx = employees.findIndex(e => e.name === name);
+        if(idx < 0) return;
+        employees[idx].balance = Math.max(0, Number(employees[idx].balance) + delta);
+        saveToLocal();
+        render();
+      });
+      return btn;
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[s]));
+    }
+
+    // ---------------- Import ----------------
+    document.getElementById("importBtn").addEventListener("click", async () => {
+      const input = document.getElementById("file");
+      if(!input.files || input.files.length === 0){
+        alert("Selecciona un archivo .xlsx o .csv primero.");
+        return;
+      }
+      const file = input.files[0];
+      const ext = file.name.toLowerCase().split(".").pop();
+
+      try{
+        if(ext === "csv"){
+          const text = await file.text();
+          importFromCSV(text);
+        }else{
+          const data = await file.arrayBuffer();
+          const wb = XLSX.read(data, { type: "array" });
+          const sheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+          importFromRows(rows);
+        }
+        saveToLocal();
+        render();
+        alert("Importado ✅");
+      }catch(e){
+        console.error(e);
+        alert("No pude importar el archivo. Revisa que tenga una hoja con nombres y balances.");
+      }
+    });
+
+    function importFromCSV(text){
+      // Simple CSV parser via SheetJS to be robust with commas/quotes
+      const wb = XLSX.read(text, { type: "string" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      importFromRows(rows);
+    }
+
+    function importFromRows(rows){
+      if(!rows || rows.length === 0){
+        employees = [];
+        return;
+      }
+
+      // If headers exist, try detect.
+      const sample = rows[0];
+
+      const nameKey =
+        findKey(sample, ["name","employee","empleado","full name","fullname","nombre"]) ||
+        Object.keys(sample)[0];
+
+      const balKey =
+        findKey(sample, ["balance","bubbles","points","puntos","score","saldo"]) ||
+        Object.keys(sample)[1];
+
+      const merged = new Map(employees.map(e => [e.name, e.balance]));
+
+      for(const r of rows){
+        const name = normalizeName(r[nameKey]);
+        if(!name) continue;
+        const bal = toNumber(r[balKey]);
+        // Si el archivo trae balance, lo tomamos como “estado”; si el empleado ya existía, se actualiza.
+        merged.set(name, bal);
+      }
+
+      employees = Array.from(merged, ([name, balance]) => ({ name, balance }));
+    }
+
+    // ---------------- Export ----------------
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      if(employees.length === 0){
+        alert("No hay datos para exportar.");
+        return;
+      }
+      const data = employees
+        .slice()
+        .sort((a,b) => b.balance - a.balance || a.name.localeCompare(b.name))
+        .map(e => ({ Name: e.name, Balance: e.balance }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Bubbles");
+      XLSX.writeFile(wb, "bubbles_balances.xlsx");
+    });
+
+    // ---------------- Reset + Search ----------------
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      const ok = confirm("¿Seguro? Esto borra los balances guardados en este navegador.");
+      if(!ok) return;
+      employees = [];
+      localStorage.removeItem(LS_KEY);
+      render();
+    });
+
+    document.getElementById("search").addEventListener("input", render);
+
+    // Init render
+    render();
+  </script>
+</body>
+</html>
