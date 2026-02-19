@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bubbles • Responsive</title>
+  <meta name="description" content="Landing responsive con fondo de burbujas y cards." />
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1230;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.10);
+      --text:#EAF0FF;
+      --muted: rgba(234,240,255,.72);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r: 18px;
+    }
+
+    /* Reset */
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 15%, rgba(130,170,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 35%, rgba(120,255,225,.10), transparent 60%),
+        radial-gradient(1200px 900px at 55% 95%, rgba(255,140,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    /* Responsive container */
+    .wrap{
+      width:min(1200px, calc(100% - clamp(24px, 5vw, 56px)));
+      margin:0 auto;
+      padding: clamp(18px, 3.2vw, 34px) 0 clamp(40px, 6vw, 72px);
+      position:relative;
+      z-index:2;
+    }
+
+    /* Top bar */
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding: 14px 0 22px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      text-decoration:none; color:var(--text);
+    }
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), rgba(255,255,255,.06) 58%, rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo::after{
+      content:"";
+      position:absolute; inset:-40%;
+      background: conic-gradient(from 180deg, rgba(120,255,225,.18), rgba(130,170,255,.18), rgba(255,140,255,.18), rgba(120,255,225,.18));
+      filter: blur(18px);
+      animation: spin 10s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg);} }
+
+    .brand .name{
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size: clamp(14px, 1.2vw, 16px);
+      line-height:1.1;
+    }
+    .brand .tag{
+      display:block;
+      font-weight:500;
+      color:var(--muted);
+      font-size: 12px;
+      margin-top:2px;
+    }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      appearance:none;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:600;
+      font-size: 13px;
+      letter-spacing:.2px;
+      display:inline-flex; align-items:center; gap:8px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(120,255,225,.22), rgba(130,170,255,.20));
+      border-color: rgba(255,255,255,.18);
+    }
+
+    /* Hero */
+    .hero{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: clamp(18px, 4vw, 38px);
+      align-items:start;
+      margin-top: 10px;
+    }
+    @media (max-width: 920px){
+      .hero{ grid-template-columns: 1fr; }
+    }
+
+    .hcard{
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius: clamp(18px, 2vw, 26px);
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 3vw, 28px);
+      position:relative;
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .hcard::before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 20% 25%, rgba(120,255,225,.18), transparent 55%),
+                  radial-gradient(circle at 80% 15%, rgba(130,170,255,.22), transparent 55%),
+                  radial-gradient(circle at 65% 80%, rgba(255,140,255,.16), transparent 55%);
+      filter: blur(16px);
+      opacity:.9;
+      transform: rotate(-6deg);
+    }
+    .hcontent{ position:relative; z-index:1; }
+
+    h1{
+      margin:0;
+      font-size: clamp(28px, 3.3vw, 44px);
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+    .lead{
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.4vw, 16px);
+      line-height: 1.55;
+      max-width: 62ch;
+    }
+
+    .pillrow{
+      display:flex; flex-wrap:wrap; gap:10px;
+      margin-top: 16px;
+    }
+    .pill{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight:600;
+      font-size: 12px;
+      color: rgba(234,240,255,.88);
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(120,255,225,.85);
+      box-shadow: 0 0 18px rgba(120,255,225,.55);
+    }
+
+    .cta{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top: 18px;
+    }
+
+    /* Side card */
+    .side{
+      display:grid;
+      gap: 14px;
+    }
+    .mini{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: clamp(16px, 2vw, 22px);
+      padding: 16px 16px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .mini h3{
+      margin:0 0 8px;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .mini p{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Sections */
+    .section{
+      margin-top: clamp(22px, 4vw, 40px);
+    }
+    .sectionhead{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 14px;
+    }
+    .sectionhead h2{
+      margin:0;
+      font-size: clamp(18px, 2vw, 22px);
+      letter-spacing:-0.2px;
+    }
+    .sectionhead .sub{
+      color:var(--muted);
+      font-size: 13px;
+    }
+
+    /* Responsive grid of cards */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .card{
+      grid-column: span 4;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: clamp(16px, 2vw, 22px);
+      padding: 16px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.32);
+      position:relative;
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .card:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.07);
+      border-color: rgba(255,255,255,.22);
+    }
+
+    /* Breakpoints */
+    @media (max-width: 1020px){
+      .card{ grid-column: span 6; }
+    }
+    @media (max-width: 620px){
+      .card{ grid-column: span 12; }
+      .actions{ width:100%; justify-content:flex-start; }
+    }
+
+    .card h3{
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .card p{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    /* Footer */
+    footer{
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      color: rgba(234,240,255,.55);
+      font-size: 12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    /* Bubble background */
+    .bubbles{
+      position:fixed;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      overflow:hidden;
+    }
+    .bubble{
+      position:absolute;
+      bottom:-120px;
+      width: var(--size);
+      height: var(--size);
+      left: var(--x);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,.06) 55%, rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      filter: blur(.2px);
+      opacity: var(--o);
+      transform: translateY(0) scale(1);
+      animation: floatUp var(--dur) linear infinite;
+      box-shadow: 0 0 30px rgba(130,170,255,.10);
+    }
+    @keyframes floatUp{
+      0%   { transform: translateY(0) translateX(0) scale(1); }
+      100% { transform: translateY(calc(-100vh - 240px)) translateX(var(--drift)) scale(1.05); }
+    }
+
+    /* Small helper */
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,240,255,.82);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Animated bubble layer -->
+  <div class="bubbles" aria-hidden="true" id="bubbles"></div>
+
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="#">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="name">Bubbles Dashboard</div>
+          <span class="tag">Responsive • clean • glassy</span>
+        </div>
+      </a>
+
+      <div class="actions">
+        <button class="btn" id="toggleMotion" type="button">🫧 Toggle bubbles</button>
+        <button class="btn" id="toggleDensity" type="button">⚙️ Density</button>
+        <button class="btn primary" type="button" id="primaryAction">✨ Primary action</button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="hcard">
+        <div class="hcontent">
+          <h1>Un estilo “bubbles” listo para cualquier monitor.</h1>
+          <p class="lead">
+            Diseño limpio, fondo animado suave y cards responsivas.
+            Tipografía fluida con <span class="kbd">clamp()</span> y layout que escala desde móvil hasta ultrawide.
+          </p>
+
+          <div class="pillrow">
+            <span class="pill"><span class="dot"></span> 100% responsive</span>
+            <span class="pill"><span class="dot" style="background:rgba(130,170,255,.85)"></span> Cards en grid</span>
+            <span class="pill"><span class="dot" style="background:rgba(255,140,255,.75)"></span> Estilo “glass”</span>
+          </div>
+
+          <div class="cta">
+            <button class="btn primary" type="button" id="ctaStart">🚀 Empezar</button>
+            <button class="btn" type="button" id="ctaSecondary">📄 Ver secciones</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="mini">
+          <h3>Tip para monitores grandes</h3>
+          <p>
+            El contenedor usa <span class="kbd">width:min(1200px, 100% - padding)</span> para que no se vea estirado
+            en pantallas ultrawide.
+          </p>
+        </div>
+        <div class="mini">
+          <h3>Tip para mobile</h3>
+          <p>
+            El grid colapsa a 1 columna y los botones se acomodan solos. Prueba a reducir la ventana.
+          </p>
+        </div>
+        <div class="mini">
+          <h3>Accesible</h3>
+          <p>
+            Animación desactivable y respeta “reduced motion” automáticamente.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sections">
+      <div class="sectionhead">
+        <h2>Cards / módulos</h2>
+        <div class="sub">Cambia textos, títulos y enlaces a tu gusto.</div>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h3>📦 Inventario</h3>
+          <p>Resumen de stock, rotación y alertas. Ideal para “ops vibes”.</p>
+        </article>
+        <article class="card">
+          <h3>💸 Pricing</h3>
+          <p>Simula margen, markup, multipliers y ajustes por tariffs.</p>
+        </article>
+        <article class="card">
+          <h3>📈 Ventas</h3>
+          <p>KPI’s básicos: revenue, unidades, AOV, conversion.</p>
+        </article>
+
+        <article class="card">
+          <h3>🧾 Notas</h3>
+          <p>Sección para SOPs rápidos, checklist o bullets de reunión.</p>
+        </article>
+        <article class="card">
+          <h3>🧩 Proyectos</h3>
+          <p>Tarjetas para iniciativas: “Launch”, “Supplier change”, etc.</p>
+        </article>
+        <article class="card">
+          <h3>🗓️ Calendario</h3>
+          <p>Bloques para próximos hitos: deliveries, reuniones, deadlines.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <div>© <span id="year"></span> • Bubbles template</div>
+      <div>Hecho para que escale bien en monitores distintos.</div>
+    </footer>
+  </main>
+
+  <script>
+    // ---------- Helpers ----------
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const bubblesEl = document.getElementById("bubbles");
+    const yearEl = document.getElementById("year");
+    yearEl.textContent = new Date().getFullYear();
+
+    let motionOn = !prefersReducedMotion;
+    let density = 26; // default number of bubbles
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+
+    function buildBubbles(count){
+      bubblesEl.innerHTML = "";
+      for(let i=0; i<count; i++){
+        const b = document.createElement("div");
+        b.className = "bubble";
+
+        const size = rand(14, 88);
+        const x = rand(0, 100);
+        const dur = rand(10, 26);
+        const o = rand(0.18, 0.55);
+        const drift = `${rand(-60, 60)}px`;
+
+        b.style.setProperty("--size", `${size}px`);
+        b.style.setProperty("--x", `${x}vw`);
+        b.style.setProperty("--dur", `${dur}s`);
+        b.style.setProperty("--o", o.toFixed(2));
+        b.style.setProperty("--drift", drift);
+
+        // Stagger start times
+        b.style.animationDelay = `${-rand(0, dur)}s`;
+
+        bubblesEl.appendChild(b);
+      }
+    }
+
+    function setMotion(on){
+      motionOn = on;
+      bubblesEl.style.display = motionOn ? "block" : "none";
+      if(motionOn && bubblesEl.childElementCount === 0) buildBubbles(density);
+    }
+
+    // Init
+    if(motionOn){
+      buildBubbles(density);
+    } else {
+      bubblesEl.style.display = "none";
+    }
+
+    // Buttons
+    document.getElementById("toggleMotion").addEventListener("click", () => {
+      setMotion(!motionOn);
+    });
+
+    document.getElementById("toggleDensity").addEventListener("click", () => {
+      density = (density === 26) ? 40 : (density === 40 ? 16 : 26);
+      if(motionOn) buildBubbles(density);
+    });
+
+    document.getElementById("ctaStart").addEventListener("click", () => {
+      alert("Listo. Ahora dime qué secciones quieres y lo adaptamos a tu proyecto 🙂");
+    });
+
+    document.getElementById("ctaSecondary").addEventListener("click", () => {
+      document.getElementById("sections").scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+    });
+
+    document.getElementById("primaryAction").addEventListener("click", () => {
+      alert("Acción principal (aquí puedes abrir un modal, linkear a otra página, etc.)");
+    });
+
+    // Rebuild bubbles on resize (optional, ligero)
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      if(!motionOn) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => buildBubbles(density), 180);
+    });
+  </script>
+</body>
+</html>
