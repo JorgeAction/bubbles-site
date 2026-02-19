@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rewards Catalog • Bubbles</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg0:#070A12; --bg1:#0B1230;
+      --text:#EAF0FF; --muted: rgba(234,240,255,.72);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 15%, rgba(130,170,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 35%, rgba(120,255,225,.10), transparent 60%),
+        radial-gradient(1200px 900px at 55% 95%, rgba(255,140,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    .wrap{
+      width:min(1200px, calc(100% - clamp(24px, 5vw, 56px)));
+      margin:0 auto;
+      padding: clamp(18px, 3.2vw, 34px) 0 clamp(40px, 6vw, 72px);
+    }
+    .top{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px; padding: 14px 0 18px; flex-wrap:wrap;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text); }
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), rgba(255,255,255,.06) 58%, rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    .name{ font-weight:800; }
+    .tag{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+    .btn{
+      appearance:none; border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06); color:var(--text);
+      padding: 10px 12px; border-radius: 14px;
+      cursor:pointer; font-weight:700; font-size: 13px;
+      display:inline-flex; align-items:center; gap:8px;
+      text-decoration:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .btn.primary{ background: linear-gradient(135deg, rgba(120,255,225,.22), rgba(130,170,255,.20)); }
+
+    .card{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    h1{ margin:0; font-size: clamp(20px, 2.2vw, 28px); }
+    .muted{ color:var(--muted); font-size:13px; line-height:1.45; margin-top:6px; }
+
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      margin-top: 14px;
+    }
+    .input{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      outline:none;
+      min-width: 220px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .reward{
+      grid-column: span 4;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.30);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    @media (max-width: 1020px){ .reward{ grid-column: span 6; } }
+    @media (max-width: 620px){ .reward{ grid-column: span 12; } }
+
+    .reward h3{ margin:0 0 6px; font-size:14px; }
+    .price{ font-weight:900; }
+    .desc{ margin:6px 0 12px; color: var(--muted); font-size:13px; line-height:1.45; min-height: 36px; }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-weight:800;
+      font-size: 12px;
+    }
+    select{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      outline:none;
+    }
+    .miniBtn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:900;
+      font-size: 13px;
+    }
+    .miniBtn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .miniBtn.disabled{ opacity:.45; cursor:not-allowed; }
+
+    .hint{
+      margin-top:10px;
+      color: rgba(234,240,255,.60);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,240,255,.82);
+      white-space:nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="./dashboard.html">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="name">Rewards Catalog</div>
+          <span class="tag">Canjea bubbles por premios</span>
+        </div>
+      </a>
+
+      <div class="row">
+        <a class="btn" href="./dashboard.html">⬅️ Volver</a>
+        <a class="btn primary" href="./index.html">🏠 Home</a>
+      </div>
+    </div>
+
+    <section class="card">
+      <h1>Catálogo de premios</h1>
+      <div class="muted">
+        Importa un Excel/CSV con columnas <span class="kbd">Reward</span>, <span class="kbd">Cost</span> (bubbles), y opcional <span class="kbd">Description</span>.
+        Selecciona un empleado y canjea descontando su balance (se usa el mismo storage del dashboard).
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <input class="input" id="file" type="file" accept=".xlsx,.xls,.csv" />
+          <button class="btn primary" id="importRewards" type="button">📥 Importar catálogo</button>
+          <button class="btn" id="exportRewards" type="button">📤 Exportar catálogo</button>
+        </div>
+        <div class="row">
+          <select id="employeeSelect"></select>
+          <span class="pill" id="balancePill">Balance: —</span>
+        </div>
+      </div>
+
+      <div class="grid" id="rewardsGrid"></div>
+
+      <div class="hint">
+        💾 Catálogo y balances se guardan en este navegador.  
+        Tip Excel: <span class="kbd">Reward</span> / <span class="kbd">Cost</span> / <span class="kbd">Description</span>. Si no, usa 1ª/2ª/3ª columna.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const EMP_KEY = "bubbles_employees_v1";
+    const REW_KEY = "bubbles_rewards_v1";
+
+    /** @type {{name:string, balance:number}[]} */
+    let employees = loadJSON(EMP_KEY) ?? [];
+    /** @type {{reward:string, cost:number, description:string}[]} */
+    let rewards = loadJSON(REW_KEY) ?? defaultRewards();
+
+    function loadJSON(key){
+      try{
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){ return null; }
+    }
+    function saveJSON(key, val){
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    function defaultRewards(){
+      return [
+        { reward:"Gift Card $10", cost:50, description:"Canjeable por tarjeta regalo." },
+        { reward:"Lunch on us", cost:80, description:"Comida pagada (equipo / individual)." },
+        { reward:"Extra break (30m)", cost:40, description:"Un descanso extra en el día." }
+      ];
+    }
+
+    function normalizeName(v){ return String(v ?? "").trim(); }
+    function toNumber(v){
+      const n = Number(String(v ?? "").replace(",", "."));
+      return Number.isFinite(n) ? n : 0;
+    }
+    function findKey(obj, candidates){
+      const keys = Object.keys(obj || {});
+      const lower = keys.map(k => k.toLowerCase());
+      for(const c of candidates){
+        const idx = lower.indexOf(c);
+        if(idx >= 0) return keys[idx];
+      }
+      return null;
+    }
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[s]));
+    }
+
+    // --- UI: employees dropdown ---
+    const employeeSelect = document.getElementById("employeeSelect");
+    const balancePill = document.getElementById("balancePill");
+
+    function renderEmployees(){
+      employeeSelect.innerHTML = "";
+      if(employees.length === 0){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No employees (importa en dashboard)";
+        employeeSelect.appendChild(opt);
+        balancePill.textContent = "Balance: —";
+        return;
+      }
+      for(const e of employees.slice().sort((a,b)=>a.name.localeCompare(b.name))){
+        const opt = document.createElement("option");
+        opt.value = e.name;
+        opt.textContent = e.name;
+        employeeSelect.appendChild(opt);
+      }
+      employeeSelect.value = employees[0].name;
+      updateBalancePill();
+    }
+
+    function updateBalancePill(){
+      const name = employeeSelect.value;
+      const emp = employees.find(e => e.name === name);
+      balancePill.textContent = `Balance: ${emp ? emp.balance : "—"}`;
+    }
+
+    employeeSelect.addEventListener("change", updateBalancePill);
+
+    // --- UI: rewards grid ---
+    const rewardsGrid = document.getElementById("rewardsGrid");
+
+    function renderRewards(){
+      rewardsGrid.innerHTML = "";
+      if(rewards.length === 0){
+        rewardsGrid.innerHTML = `<div class="muted">No hay premios. Importa un catálogo.</div>`;
+        return;
+      }
+
+      const selectedName = employeeSelect.value;
+      const emp = employees.find(e => e.name === selectedName);
+      const bal = emp ? emp.balance : 0;
+
+      for(const r of rewards.slice().sort((a,b)=>a.cost-b.cost)){
+        const canRedeem = emp && bal >= r.cost;
+
+        const card = document.createElement("div");
+        card.className = "reward";
+        card.innerHTML = `
+          <h3>${escapeHtml(r.reward)}</h3>
+          <div class="row" style="justify-content:space-between; margin-top:8px;">
+            <span class="pill">Cost: <span class="price">${r.cost}</span></span>
+            <span class="pill">Type: Reward</span>
+          </div>
+          <div class="desc">${escapeHtml(r.description || "")}</div>
+          <div class="row" style="justify-content:space-between;">
+            <button class="miniBtn ${canRedeem ? "" : "disabled"}" ${canRedeem ? "" : "disabled"}>Redeem</button>
+            <span class="pill">Balance after: ${emp ? Math.max(0, bal - r.cost) : "—"}</span>
+          </div>
+        `;
+
+        const btn = card.querySelector("button");
+        btn.addEventListener("click", () => redeem(r));
+        rewardsGrid.appendChild(card);
+      }
+    }
+
+    function redeem(reward){
+      const name = employeeSelect.value;
+      const idx = employees.findIndex(e => e.name === name);
+      if(idx < 0){
+        alert("No hay empleados. Importa primero en el dashboard.");
+        return;
+      }
+      if(employees[idx].balance < reward.cost){
+        alert("No tiene suficientes bubbles para este premio.");
+        return;
+      }
+
+      const ok = confirm(`Redeem "${reward.reward}" for ${reward.cost} bubbles?\n\nEmployee: ${name}`);
+      if(!ok) return;
+
+      employees[idx].balance = Math.max(0, employees[idx].balance - reward.cost);
+      saveJSON(EMP_KEY, employees);
+      updateBalancePill();
+      renderRewards();
+      alert("Redeemed ✅ (balance actualizado)");
+    }
+
+    // --- Import rewards ---
+    document.getElementById("importRewards").addEventListener("click", async () => {
+      const input = document.getElementById("file");
+      if(!input.files || input.files.length === 0){
+        alert("Selecciona un archivo .xlsx o .csv primero.");
+        return;
+      }
+      const file = input.files[0];
+      const ext = file.name.toLowerCase().split(".").pop();
+
+      try{
+        let rows;
+        if(ext === "csv"){
+          const text = await file.text();
+          const wb = XLSX.read(text, { type:"string" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        }else{
+          const data = await file.arrayBuffer();
+          const wb = XLSX.read(data, { type:"array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        }
+
+        importRewardsFromRows(rows);
+        saveJSON(REW_KEY, rewards);
+        renderRewards();
+        alert("Catálogo importado ✅");
+      }catch(e){
+        console.error(e);
+        alert("No pude importar el catálogo. Revisa columnas Reward/Cost.");
+      }
+    });
+
+    function importRewardsFromRows(rows){
+      if(!rows || rows.length === 0){
+        rewards = [];
+        return;
+      }
+      const sample = rows[0];
+
+      const rewardKey =
+        findKey(sample, ["reward","item","premio","prize","name","title"]) ||
+        Object.keys(sample)[0];
+
+      const costKey =
+        findKey(sample, ["cost","price","bubbles","points","puntos"]) ||
+        Object.keys(sample)[1];
+
+      const descKey =
+        findKey(sample, ["description","desc","details","detalle","notas"]) ||
+        Object.keys(sample)[2];
+
+      const out = [];
+      for(const r of rows){
+        const reward = normalizeName(r[rewardKey]);
+        if(!reward) continue;
+        const cost = Math.max(0, Math.round(toNumber(r[costKey])));
+        const description = normalizeName(r[descKey] ?? "");
+        out.push({ reward, cost, description });
+      }
+      rewards = out;
+    }
+
+    // --- Export rewards ---
+    document.getElementById("exportRewards").addEventListener("click", () => {
+      if(rewards.length === 0){
+        alert("No hay catálogo para exportar.");
+        return;
+      }
+      const data = rewards
+        .slice()
+        .sort((a,b)=>a.cost-b.cost || a.reward.localeCompare(b.reward))
+        .map(r => ({ Reward: r.reward, Cost: r.cost, Description: r.description }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Rewards");
+      XLSX.writeFile(wb, "bubbles_rewards_catalog.xlsx");
+    });
+
+    // Init
+    renderEmployees();
+    renderRewards();
+
+    // Re-render rewards if employees exist and balance changes (e.g. you updated dashboard and came back)
+    window.addEventListener("focus", () => {
+      employees = loadJSON(EMP_KEY) ?? [];
+      renderEmployees();
+      renderRewards();
+    });
+  </script>
+</body>
+</html>
