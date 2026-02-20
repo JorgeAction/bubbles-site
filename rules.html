@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rules & Metrics • Bubbles</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg0:#070A12; --bg1:#0B1230;
+      --text:#EAF0FF; --muted: rgba(234,240,255,.72);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 15%, rgba(130,170,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 35%, rgba(120,255,225,.10), transparent 60%),
+        radial-gradient(1200px 900px at 55% 95%, rgba(255,140,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    .wrap{
+      width:min(1200px, calc(100% - clamp(24px, 5vw, 56px)));
+      margin:0 auto;
+      padding: clamp(18px, 3.2vw, 34px) 0 clamp(40px, 6vw, 72px);
+    }
+    .top{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px; padding: 14px 0 18px; flex-wrap:wrap;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text); }
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), rgba(255,255,255,.06) 58%, rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    .name{ font-weight:800; }
+    .tag{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+
+    .btn{
+      appearance:none; border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06); color:var(--text);
+      padding: 10px 12px; border-radius: 14px;
+      cursor:pointer; font-weight:700; font-size: 13px;
+      display:inline-flex; align-items:center; gap:8px;
+      text-decoration:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .btn.primary{ background: linear-gradient(135deg, rgba(120,255,225,.22), rgba(130,170,255,.20)); }
+    .btn.danger{ background: rgba(255,80,110,.14); border-color: rgba(255,80,110,.28); }
+
+    .card{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    h1{ margin:0; font-size: clamp(20px, 2.2vw, 28px); }
+    .muted{ color:var(--muted); font-size:13px; line-height:1.45; margin-top:6px; }
+
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      margin-top: 14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .input{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      outline:none;
+      min-width: 220px;
+    }
+
+    .tablewrap{
+      overflow:auto;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+      margin-top: 14px;
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width: 760px;
+      background: rgba(0,0,0,.12);
+    }
+    thead th{
+      position:sticky; top:0;
+      background: rgba(10,14,30,.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-align:left;
+      font-size:12px;
+      letter-spacing:.18px;
+      color: rgba(234,240,255,.78);
+      border-bottom:1px solid rgba(255,255,255,.10);
+      padding: 12px 12px;
+      white-space:nowrap;
+    }
+    tbody td{
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding: 12px 12px;
+      vertical-align:middle;
+      font-size: 13px;
+    }
+    tbody tr:hover td{ background: rgba(255,255,255,.03); }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-weight:900;
+      font-size: 12px;
+      white-space:nowrap;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,240,255,.82);
+      white-space:nowrap;
+    }
+    .miniBtn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size: 12px;
+    }
+    .miniBtn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="./dashboard.html">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="name">Rules & Metrics</div>
+          <span class="tag">Cómo se reparten bubbles (importable por Excel)</span>
+        </div>
+      </a>
+
+      <div class="row">
+        <a class="btn" href="./dashboard.html">⬅️ Dashboard</a>
+        <a class="btn primary" href="./rewards.html">🎁 Rewards</a>
+        <a class="btn" href="./index.html">🏠 Home</a>
+      </div>
+    </div>
+
+    <section class="card">
+      <h1>Desglose de métricas</h1>
+      <div class="muted">
+        Importa un Excel/CSV con columnas <span class="kbd">Metric</span>, <span class="kbd">Bubbles</span>, y opcional <span class="kbd">Description</span> / <span class="kbd">Category</span>.
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <input class="input" id="file" type="file" accept=".xlsx,.xls,.csv" />
+          <button class="btn primary" id="importBtn" type="button">📥 Importar</button>
+          <button class="btn" id="exportBtn" type="button">📤 Exportar XLSX</button>
+        </div>
+        <div class="row">
+          <input class="input" id="search" type="search" placeholder="Buscar métrica…" />
+          <button class="btn danger" id="resetBtn" type="button">🗑️ Reset</button>
+        </div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34%;">Métrica</th>
+              <th style="width:12%;">Bubbles</th>
+              <th style="width:18%;">Categoría</th>
+              <th style="width:36%;">Descripción</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Ejemplo: <span class="kbd">Top picker</span> → 10 • <span class="kbd">Ship over 90%</span> → 5 • <span class="kbd">Above &amp; beyond</span> → 20 • <span class="kbd">Lead huddle</span> → 5
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const KEY = "bubbles_rules_v1";
+
+    /** @type {{metric:string, bubbles:number, category:string, description:string}[]} */
+    let rules = load() ?? defaultRules();
+
+    function defaultRules(){
+      return [
+        { metric:"Top picker", bubbles:10, category:"Productivity", description:"Top performer del día/semana." },
+        { metric:"Ship over 90%", bubbles:5, category:"Quality", description:"Cumple ship rate >= 90%." },
+        { metric:"Above & beyond", bubbles:20, category:"Culture", description:"Ayuda extra / iniciativa notable." },
+        { metric:"Lead huddle", bubbles:5, category:"Leadership", description:"Lidera huddle / training." }
+      ];
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){ return null; }
+    }
+    function save(){
+      localStorage.setItem(KEY, JSON.stringify(rules));
+    }
+
+    function normalize(v){ return String(v ?? "").trim(); }
+    function toNumber(v){
+      const n = Number(String(v ?? "").replace(",", "."));
+      return Number.isFinite(n) ? n : 0;
+    }
+    function findKey(obj, candidates){
+      const keys = Object.keys(obj || {});
+      const lower = keys.map(k => k.toLowerCase());
+      for(const c of candidates){
+        const idx = lower.indexOf(c);
+        if(idx >= 0) return keys[idx];
+      }
+      return null;
+    }
+    function esc(s){
+      return String(s).replace(/[&<>"']/g, ch => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[ch]));
+    }
+
+    function render(){
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      const rows = rules
+        .slice()
+        .sort((a,b)=> b.bubbles - a.bubbles || a.metric.localeCompare(b.metric))
+        .filter(r => !q || (r.metric+r.category+r.description).toLowerCase().includes(q));
+
+      if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:18px;color:rgba(234,240,255,.65)">No hay reglas cargadas.</td></tr>`;
+        return;
+      }
+
+      for(const r of rows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${esc(r.metric)}</strong></td>
+          <td><span class="pill">${Math.round(r.bubbles)}</span></td>
+          <td>${esc(r.category || "")}</td>
+          <td>${esc(r.description || "")}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Import
+    document.getElementById("importBtn").addEventListener("click", async () => {
+      const input = document.getElementById("file");
+      if(!input.files || input.files.length === 0){
+        alert("Selecciona un archivo .xlsx o .csv primero.");
+        return;
+      }
+      const file = input.files[0];
+      const ext = file.name.toLowerCase().split(".").pop();
+
+      try{
+        let rows;
+        if(ext === "csv"){
+          const text = await file.text();
+          const wb = XLSX.read(text, { type:"string" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        }else{
+          const data = await file.arrayBuffer();
+          const wb = XLSX.read(data, { type:"array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        }
+        importFromRows(rows);
+        save();
+        render();
+        alert("Rules importadas ✅");
+      }catch(e){
+        console.error(e);
+        alert("No pude importar. Revisa que tenga Metric y Bubbles.");
+      }
+    });
+
+    function importFromRows(rows){
+      if(!rows || rows.length === 0){
+        rules = [];
+        return;
+      }
+      const sample = rows[0];
+      const metricKey =
+        findKey(sample, ["metric","rule","kpi","métrica","metrica","name","title"]) || Object.keys(sample)[0];
+      const bubblesKey =
+        findKey(sample, ["bubbles","points","puntos","value","score"]) || Object.keys(sample)[1];
+      const catKey =
+        findKey(sample, ["category","cat","type","grupo"]) || Object.keys(sample)[2];
+      const descKey =
+        findKey(sample, ["description","desc","details","detalle","notes","notas"]) || Object.keys(sample)[3];
+
+      const out = [];
+      for(const r of rows){
+        const metric = normalize(r[metricKey]);
+        if(!metric) continue;
+        const bubbles = Math.round(toNumber(r[bubblesKey]));
+        const category = normalize(r[catKey] ?? "");
+        const description = normalize(r[descKey] ?? "");
+        out.push({ metric, bubbles, category, description });
+      }
+      rules = out;
+    }
+
+    // Export
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      if(rules.length === 0){
+        alert("No hay reglas para exportar.");
+        return;
+      }
+      const data = rules
+        .slice()
+        .sort((a,b)=> b.bubbles - a.bubbles || a.metric.localeCompare(b.metric))
+        .map(r => ({ Metric: r.metric, Bubbles: r.bubbles, Category: r.category, Description: r.description }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Rules");
+      XLSX.writeFile(wb, "bubbles_rules_metrics.xlsx");
+    });
+
+    // Reset + Search
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      const ok = confirm("¿Reset rules? Esto borra las reglas guardadas en este navegador.");
+      if(!ok) return;
+      rules = [];
+      localStorage.removeItem(KEY);
+      render();
+    });
+
+    document.getElementById("search").addEventListener("input", render);
+
+    // Init
+    render();
+  </script>
+</body>
+</html>
